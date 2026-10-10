@@ -8,7 +8,7 @@
 // 한 번 찾은 좌표는 data/geocode-cache.json 에 저장해 다음부터는 바로 씁니다.
 // 다른 지역 앱을 만들 때는 아래 REGION 설정만 바꾸면 됩니다.
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -116,7 +116,7 @@ async function geocode(rows, cache) {
     }
     cache[r.key] = hit ? { lat: Math.round(hit.lat * 1e6) / 1e6, lng: Math.round(hit.lng * 1e6) / 1e6, src: hit.src } : { tried: how };
     if (hit) found++;
-    if (++n % 200 === 0) console.log(`  ${n}/${todo.length} (찾음 ${found})`);
+    if (++n % 200 === 0) { console.log(`  ${n}/${todo.length} (찾음 ${found})`); await writeFile(CACHE_FILE, JSON.stringify(cache)); }
   }
   console.log(`좌표 찾음: ${found}/${todo.length}`);
   if (err) throw new Error(err);
@@ -125,6 +125,7 @@ async function geocode(rows, cache) {
 async function main() {
   const files = process.argv.slice(2);
   if (!files.length) { console.error("CSV 파일 경로를 넣어 주세요."); process.exit(1); }
+  await mkdir(path.join(ROOT, "data"), { recursive: true });
   let cache = {};
   try { cache = JSON.parse(await readFile(CACHE_FILE, "utf8")); } catch {}
 
