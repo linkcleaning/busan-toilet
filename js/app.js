@@ -569,7 +569,7 @@ function select(id, scrollMap = true) {
 // 연락처는 여기 한 곳만 바꾸면 됩니다. 비워 둔 항목은 화면에 나오지 않습니다.
 const CONTACT = {
   email: "linkdole@naver.com",
-  kakao: "",      // 카카오톡 오픈채팅 주소, 예: "https://open.kakao.com/o/xxxx"
+  kakao: "https://open.kakao.com/o/sCckMORi", // 카카오톡 오픈채팅 (Ddong 공중화장실 앱 문의방)
   phone: "",      // 예: "010-0000-0000"
 };
 const hasContact = () => Boolean(CONTACT.email || CONTACT.kakao || CONTACT.phone);
