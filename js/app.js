@@ -546,6 +546,26 @@ function select(id, scrollMap = true) {
   }
 }
 
+// ---------- 문의하기 (문의·광고·정보 수정) ----------
+// 연락처는 여기 한 곳만 바꾸면 됩니다. 비워 둔 항목은 화면에 나오지 않습니다.
+const CONTACT = {
+  email: "",      // 예: "hello@example.com"
+  kakao: "",      // 카카오톡 오픈채팅 주소, 예: "https://open.kakao.com/o/xxxx"
+  phone: "",      // 예: "010-0000-0000"
+};
+const hasContact = () => Boolean(CONTACT.email || CONTACT.kakao || CONTACT.phone);
+function contactCard(subject = "") {
+  if (!hasContact()) return "";
+  const subj = encodeURIComponent(`[Ddong] ${subject || t("guide.contactTitle")}`);
+  return `<article class="g-card g-contact" id="contact"><div class="top"><div class="g-ico c-e">${icon("message")}</div><span class="g-num">05</span></div>
+    <h3>${esc(t("guide.contactTitle"))}</h3><p>${esc(t("guide.contactBody"))}</p>
+    <div class="contact-list">
+      ${CONTACT.kakao ? `<a class="contact-btn kakao press" href="${esc(CONTACT.kakao)}" target="_blank" rel="noreferrer">${icon("message")}${esc(t("guide.contactKakao"))}</a>` : ""}
+      ${CONTACT.email ? `<a class="contact-btn press" href="mailto:${esc(CONTACT.email)}?subject=${subj}">${icon("send")}${esc(CONTACT.email)}</a>` : ""}
+      ${CONTACT.phone ? `<a class="contact-btn press" href="tel:${esc(CONTACT.phone.replace(/[^\d+]/g, ""))}">${icon("phone")}${esc(CONTACT.phone)}</a>` : ""}
+    </div></article>`;
+}
+
 // ---------- 안내 ----------
 function renderGuide() {
   const m = state.meta;
@@ -564,7 +584,7 @@ function renderGuide() {
         ${k === "emergency" ? `<div class="sos" style="margin-top:16px"><a href="tel:112">${icon("phone")}Police 112</a><a href="tel:119">${icon("phone")}Emergency 119</a></div>` : ""}
         ${k === "data" && m ? `<p class="meta">${m.count.toLocaleString()} · ${esc(t("detail.updated"))} ${esc(m.referenceDate || "-")}<br><a href="${esc(m.sourcePages?.[0] || "https://www.data.go.kr")}" target="_blank" rel="noreferrer">data.go.kr</a></p>` : ""}
       </article>`).join("")}
-      <article class="g-card"><div class="top"><div class="g-ico c-e">${icon("download")}</div><span class="g-num">05</span></div><h3>${esc(t("guide.install"))}</h3><p>${esc(t("guide.installBody"))}</p></article>
+      ${contactCard()}
     </div></div>`;
 }
 
@@ -701,7 +721,7 @@ document.addEventListener("click", (e) => {
     case "locate": locate(); break;
     case "more": state.shown += 20; renderList(); break;
     case "close": state.selectedId = null; renderDrawer(); if (map) markerById.forEach((m) => m.setIcon(pinIcon(false))); break;
-    case "report": toast(t("detail.reportMessage")); break;
+    case "report": if (hasContact()) { setView("guide"); setTimeout(() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80); } else toast(t("detail.reportMessage")); break;
     case "copyloc": { const l = locationText(); if (l) { const txt = `${l.coord}${l.near ? ` / ${l.near}` : ""}\n${l.map}`; (navigator.clipboard?.writeText(txt) || Promise.reject()).then(() => toast(S("locCopied"))).catch(() => toast(txt)); } break; }
     case "speakphrase": speakKo(phraseKo(PHRASES[+b.dataset.i])); break;
     case "closephrase": $("#phrase-modal").hidden = true; break;
