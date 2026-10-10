@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0B2E4F"/><g transform="translate(0.0 0.0) scale(1.0)"><circle cx="256" cy="250" r="196" fill="#ffffff" opacity=".10"/><g transform="translate(0 -14)"><g transform="translate(70 70) scale(3.1)">
+  <defs>
+    <linearGradient id="ia" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A86B3C"/><stop offset="1" stop-color="#7A4A26"/></linearGradient>
+    <linearGradient id="ib" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B97A47"/><stop offset="1" stop-color="#8B5630"/></linearGradient>
+    <linearGradient id="ic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C98B55"/><stop offset="1" stop-color="#9A6238"/></linearGradient>
+  </defs>
+  <ellipse cx="60" cy="112" rx="40" ry="5" fill="#0B2E4F" opacity=".12"/>
+  <path d="M14 96c0-14 12-22 24-22h44c12 0 24 8 24 22 0 9-7 14-16 14H30c-9 0-16-5-16-14Z" fill="url(#ia)"/>
+  <path d="M26 72c0-11 9-18 19-18h30c10 0 19 7 19 18 0 7-5 11-12 11H38c-7 0-12-4-12-11Z" fill="url(#ib)"/>
+  <path d="M38 52c0-9 7-15 15-15h6c4-1 6-6 4-12 9 2 15 9 15 17 0 7 0 10-1 12-1 5-5 8-10 8H48c-6 0-10-4-10-10Z" fill="url(#ic)"/>
+  <path d="M63 25c3-5 2-10-1-14" stroke="#9A6238" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M48 44c3-3 7-4 11-3M36 63c4-3 9-4 14-3M24 87c5-4 12-5 18-4" stroke="#fff" stroke-opacity=".28" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <ellipse cx="46" cy="86" rx="5.2" ry="6.6" fill="#fff"/><ellipse cx="74" cy="86" rx="5.2" ry="6.6" fill="#fff"/>
+  <ellipse cx="47" cy="87.5" rx="3.4" ry="4.4" fill="#2A1A10"/><ellipse cx="75" cy="87.5" rx="3.4" ry="4.4" fill="#2A1A10"/>
+  <circle cx="48.3" cy="85.6" r="1.3" fill="#fff"/><circle cx="76.3" cy="85.6" r="1.3" fill="#fff"/>
+  <ellipse cx="35" cy="97" rx="6" ry="3.4" fill="#FF7A7A" opacity=".55"/><ellipse cx="85" cy="97" rx="6" ry="3.4" fill="#FF7A7A" opacity=".55"/>
+  <path d="M53 97c4 5 10 5 14 0" stroke="#2A1A10" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+</g></g><rect x="318" y="58" width="128" height="74" rx="26" fill="#FFC233" stroke="#fff" stroke-width="10"/><text x="382" y="110" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="46" fill="#0B2E4F">WC</text><rect x="136" y="404" width="240" height="78" rx="39" fill="#FFC233" stroke="#fff" stroke-width="8"/><text x="256" y="458" text-anchor="middle" font-family="Noto Sans CJK KR,Apple SD Gothic Neo,Malgun Gothic,sans-serif" font-weight="900" font-size="48" fill="#0B2E4F">부산</text></g></svg>

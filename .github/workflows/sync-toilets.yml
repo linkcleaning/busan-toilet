@@ -1,0 +1,33 @@
+name: 부산 화장실 데이터 만들기
+
+on:
+  push:
+    paths:
+      - "data-source/**"
+      - "scripts/sync-toilets.mjs"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: CSV → 좌표 찾기 → data/toilets.json
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+        run: node scripts/sync-toilets.mjs data-source/busan-toilets.csv
+      - name: 바뀐 내용이 있으면 커밋
+        run: |
+          git add data/toilets.json data/geocode-cache.json
+          if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
+          git config user.name "toilet-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "부산 데이터 갱신 $(date -u +%Y-%m-%d)"
+          git push
