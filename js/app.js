@@ -549,7 +549,7 @@ function select(id, scrollMap = true) {
 // ---------- 문의하기 (문의·광고·정보 수정) ----------
 // 연락처는 여기 한 곳만 바꾸면 됩니다. 비워 둔 항목은 화면에 나오지 않습니다.
 const CONTACT = {
-  email: "",      // 예: "hello@example.com"
+  email: "linkdole@naver.com",
   kakao: "",      // 카카오톡 오픈채팅 주소, 예: "https://open.kakao.com/o/xxxx"
   phone: "",      // 예: "010-0000-0000"
 };
@@ -561,7 +561,7 @@ function contactCard(subject = "") {
     <h3>${esc(t("guide.contactTitle"))}</h3><p>${esc(t("guide.contactBody"))}</p>
     <div class="contact-list">
       ${CONTACT.kakao ? `<a class="contact-btn kakao press" href="${esc(CONTACT.kakao)}" target="_blank" rel="noreferrer">${icon("message")}${esc(t("guide.contactKakao"))}</a>` : ""}
-      ${CONTACT.email ? `<a class="contact-btn press" href="mailto:${esc(CONTACT.email)}?subject=${subj}">${icon("send")}${esc(CONTACT.email)}</a>` : ""}
+      ${CONTACT.email ? `<a class="contact-btn press" href="mailto:${esc(CONTACT.email)}?subject=${subj}">${icon("send")}${esc(t("guide.contactEmail"))}</a>` : ""}
       ${CONTACT.phone ? `<a class="contact-btn press" href="tel:${esc(CONTACT.phone.replace(/[^\d+]/g, ""))}">${icon("phone")}${esc(CONTACT.phone)}</a>` : ""}
     </div></article>`;
 }
