@@ -30,4 +30,5 @@ jobs:
           git config user.name "toilet-data-bot"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "부산 데이터 갱신 $(date -u +%Y-%m-%d)"
+          git pull --rebase origin main   # 도는 동안 다른 변경이 올라와도 실패하지 않게
           git push
