@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Ddong 사진 관리</title>
+<style>
+  :root { --bg: #F2F4F6; --card: #fff; --ink: #172A3A; --muted: #6B7A84; --line: #DDE3E7; --ok: #1F8A6A; --no: #C2412D; --accent: #FF8A34; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px; background: var(--ink); color: #fff; }
+  header h1 { margin: 0; flex: 1; font-size: 17px; }
+  header button { border: 0; border-radius: 999px; background: rgba(255,255,255,.15); color: #fff; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 800; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 60px; }
+  .login { background: var(--card); border-radius: 20px; padding: 20px; display: grid; gap: 10px; }
+  .login input { width: 100%; height: 48px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 12px; font: inherit; }
+  .btn { height: 48px; border: 0; border-radius: 12px; background: var(--ink); color: #fff; font: inherit; font-weight: 900; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tabs button { flex: 1; height: 42px; border: 1.5px solid var(--line); border-radius: 999px; background: #fff; font: inherit; font-weight: 800; color: var(--ink); }
+  .tabs button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .item { background: var(--card); border: 1.5px solid var(--line); border-radius: 18px; overflow: hidden; margin-bottom: 14px; }
+  .item img { display: block; width: 100%; max-height: 420px; object-fit: contain; background: #111; }
+  .meta { padding: 12px 14px 4px; }
+  .meta b { display: block; font-size: 16px; }
+  .meta span { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; margin-right: 6px; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 800; background: #EEF2F4; color: var(--ink); }
+  .tag.rep { background: #FDE8E4; color: var(--no); }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 14px 14px; }
+  .acts button { height: 50px; border: 0; border-radius: 12px; font: inherit; font-weight: 900; color: #fff; }
+  .ok { background: var(--ok); } .no { background: var(--no); }
+  .empty, .msg { text-align: center; color: var(--muted); padding: 30px 10px; }
+  .err { color: var(--no); font-weight: 700; }
+</style>
+</head>
+<body>
+<header><h1>Ddong 사진 관리</h1><button id="refresh" hidden>새로고침</button><button id="logout" hidden>로그아웃</button></header>
+<main id="main"></main>
+<script>
+// Ddong 화장실 사진 관리 — 올라온 사진을 확인하고 승인/거절합니다. (관리자 계정으로만 동작)
+const SUPA = { url: "https://hitnkcmcrztkeqohnuso.supabase.co", key: "sb_publishable_yV6XGpNN-PIyO9WrSxfLJw_nxC5H8Mh", bucket: "toilet-photos" };
+const APPS = { jeju: { name: "제주", repo: "jeju-toilet" }, seoul: { name: "서울·경기", repo: "seoul-toilet" }, busan: { name: "부산", repo: "busan-toilet" } };
+const KIND = { building: "건물 외관", entrance: "화장실 입구", route: "찾아가는 길" };
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let token = null, tab = "pending";
+try { token = sessionStorage.getItem("ddong-admin"); } catch {}
+const names = {};
+async function toiletName(app, id) {
+  if (!names[app]) {
+    names[app] = fetch(`https://linkcleaning.github.io/${APPS[app]?.repo}/data/toilets.json`).then((r) => r.json())
+      .then((d) => Object.fromEntries(d.toilets.map((x) => [x.id, x]))).catch(() => ({}));
+  }
+  return (await names[app])[id];
+}
+const H = (extra = {}) => ({ apikey: SUPA.key, Authorization: `Bearer ${token}`, ...extra });
+const pub = (path) => `${SUPA.url}/storage/v1/object/public/${SUPA.bucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+function showLogin(msg = "") {
+  $("#refresh").hidden = $("#logout").hidden = true;
+  $("#main").innerHTML = `<form class="login" id="login"><b>관리자 로그인</b>
+    <input id="email" type="email" autocomplete="username" placeholder="이메일" value="linkdole@naver.com" required>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호" required>
+    <button class="btn">로그인</button>${msg ? `<p class="err">${esc(msg)}</p>` : ""}</form>`;
+  $("#login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const r = await fetch(`${SUPA.url}/auth/v1/token?grant_type=password`, { method: "POST", headers: { apikey: SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: $("#email").value.trim(), password: $("#pw").value }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) return showLogin("로그인하지 못했어요. 이메일과 비밀번호를 확인해 주세요.");
+    token = j.access_token; try { sessionStorage.setItem("ddong-admin", token); } catch {}
+    load();
+  });
+}
+async function load() {
+  $("#refresh").hidden = $("#logout").hidden = false;
+  $("#main").innerHTML = `<div class="tabs"><button data-tab="pending" aria-pressed="${tab === "pending"}">확인 대기</button><button data-tab="approved" aria-pressed="${tab === "approved"}">공개 중</button></div><div id="list" class="msg">불러오는 중…</div>`;
+  const r = await fetch(`${SUPA.url}/rest/v1/photos?select=*&status=eq.${tab}&order=${tab === "pending" ? "reports.desc," : ""}created_at.desc&limit=100`, { headers: H() });
+  if (r.status === 401) return showLogin("로그인이 만료됐어요. 다시 로그인해 주세요.");
+  const rows = r.ok ? await r.json() : [];
+  if (!rows.length) { $("#list").outerHTML = `<p class="empty">${tab === "pending" ? "확인할 사진이 없어요 👍" : "공개 중인 사진이 없어요"}</p>`; return; }
+  $("#list").outerHTML = `<div id="list">${rows.map((p) => `<article class="item" id="it-${p.id}">
+      <img src="${esc(pub(p.path))}" alt="" loading="lazy">
+      <div class="meta"><b data-name="${esc(p.app)}|${esc(p.toilet_id)}">${esc(p.toilet_id)}</b>
+        <span class="tag">${esc(APPS[p.app]?.name || p.app)}</span><span class="tag">${esc(KIND[p.kind] || p.kind)}</span>${p.reports ? `<span class="tag rep">신고 ${p.reports}회</span>` : ""}
+        <span>${new Date(p.created_at).toLocaleString("ko-KR")}</span></div>
+      <div class="acts">${tab === "pending"
+        ? `<button class="ok" data-act="approve" data-id="${p.id}">승인 (공개)</button><button class="no" data-act="reject" data-id="${p.id}" data-path="${esc(p.path)}">거절 (삭제)</button>`
+        : `<button class="no" data-act="reject" data-id="${p.id}" data-path="${esc(p.path)}" style="grid-column:1/-1">내리기 (삭제)</button>`}</div></article>`).join("")}</div>`;
+  document.querySelectorAll("[data-name]").forEach(async (el) => {
+    const [app, id] = el.dataset.name.split("|"); const x = await toiletName(app, id);
+    if (x) el.innerHTML = `${esc(x.name)}<br><span>${esc(x.address || "")}</span>`;
+  });
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-tab],button[data-act]");
+  if (!b) return;
+  if (b.dataset.tab) { tab = b.dataset.tab; return load(); }
+  b.disabled = true;
+  const id = b.dataset.id;
+  if (b.dataset.act === "approve") {
+    const r = await fetch(`${SUPA.url}/rest/v1/photos?id=eq.${id}`, { method: "PATCH", headers: H({ "Content-Type": "application/json", Prefer: "return=minimal" }), body: JSON.stringify({ status: "approved", reports: 0 }) });
+    if (!r.ok) { b.disabled = false; return alertMsg(id, "승인하지 못했어요"); }
+  } else {
+    await fetch(`${SUPA.url}/storage/v1/object/${SUPA.bucket}/${b.dataset.path}`, { method: "DELETE", headers: H() });
+    const r = await fetch(`${SUPA.url}/rest/v1/photos?id=eq.${id}`, { method: "DELETE", headers: H({ Prefer: "return=minimal" }) });
+    if (!r.ok) { b.disabled = false; return alertMsg(id, "삭제하지 못했어요"); }
+  }
+  document.getElementById(`it-${id}`)?.remove();
+  if (!document.querySelector(".item")) load();
+});
+function alertMsg(id, m) { const el = document.getElementById(`it-${id}`); el?.querySelector(".meta")?.insertAdjacentHTML("beforeend", `<p class="err">${esc(m)}</p>`); }
+$("#refresh").addEventListener("click", load);
+$("#logout").addEventListener("click", () => { token = null; try { sessionStorage.removeItem("ddong-admin"); } catch {} showLogin(); });
+token ? load() : showLogin();
+</script>
+</body>
+</html>

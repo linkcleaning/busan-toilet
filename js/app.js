@@ -507,6 +507,7 @@ function renderDrawer() {
       <div class="d-box box-green">${icon("pin")}<p class="lb">${esc(t("detail.distance"))}</p><p class="v">${esc(tr.mode === "walk" ? tr.walk : tr.drive)} · ${esc(tr.dist)}</p><p class="s">${esc(tr.mode === "walk" ? tr.drive : tr.walk)} ${esc(t("detail.estimate"))}</p></div>
       <div class="d-box box-warm">${icon("clock")}<p class="lb">${esc(t("detail.hours"))}</p><p class="v">${esc(x.hours || t("common.unknown"))}</p>${x.closedDays || x.weekdaysOnly ? `<p class="s">${esc(t("detail.closedDays"))}: ${esc(x.closedDays || (state.lang === "ko" ? "토요일, 일요일" : "Sat, Sun"))}</p>` : ""}</div>
     </div>
+    ${photoSection(x)}
     <div class="tip">${icon("info")}<div><b>${esc(t("detail.microTip"))}</b><p>${esc(tip)}</p></div></div>
     <div class="sec"><h3>${icon("wheelchair")}${esc(t("detail.facilities"))}</h3><div class="flags">
       ${flag("wheelchair", t("facilities.wheelchair"), x.wheelchair)}
@@ -552,6 +553,7 @@ function renderDrawer() {
     <div class="d-foot"><span>${icon("calendar")}${esc(t("detail.updated"))} ${esc(x.ref || state.meta?.referenceDate || "-")}</span><button type="button" data-act="report">${esc(t("detail.report"))}</button></div>`;
   el.hidden = false;
   el.scrollTop = 0;
+  loadPhotos(x);
 }
 
 function select(id, scrollMap = true) {
@@ -584,6 +586,121 @@ function contactCard(subject = "") {
       ${CONTACT.phone ? `<a class="contact-btn press" href="tel:${esc(CONTACT.phone.replace(/[^\d+]/g, ""))}">${icon("phone")}${esc(CONTACT.phone)}</a>` : ""}
     </div></article>`;
 }
+
+// ---------- 화장실 사진 (누구나 올리기 → 관리자 확인 → 모두에게 공개) ----------
+// Supabase: 공개용(publishable) 키만 사용. 승인된 사진만 보이고, 새 사진은 '확인 대기'로만 저장됩니다.
+const PHOTO = { url: "https://hitnkcmcrztkeqohnuso.supabase.co", key: "sb_publishable_yV6XGpNN-PIyO9WrSxfLJw_nxC5H8Mh", app: "busan", bucket: "toilet-photos" };
+const PHOTO_KINDS = ["building", "entrance", "route"];
+const photoCache = new Map();
+const supaHeaders = (extra = {}) => ({ apikey: PHOTO.key, Authorization: `Bearer ${PHOTO.key}`, ...extra });
+const photoUrl = (path) => `${PHOTO.url}/storage/v1/object/public/${PHOTO.bucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+async function fetchPhotos(id, force = false) {
+  if (!force && photoCache.has(id)) return photoCache.get(id);
+  const q = `select=id,kind,path,created_at&app=eq.${PHOTO.app}&toilet_id=eq.${encodeURIComponent(id)}&status=eq.approved&order=created_at.desc&limit=30`;
+  try {
+    const r = await fetch(`${PHOTO.url}/rest/v1/photos?${q}`, { headers: supaHeaders() });
+    const rows = r.ok ? await r.json() : [];
+    // 종류마다 가장 최근 사진 한 장 (새 사진이 승인되면 그 사진으로 바뀜)
+    const latest = PHOTO_KINDS.map((k) => rows.find((x) => x.kind === k)).filter(Boolean);
+    photoCache.set(id, latest);
+    return latest;
+  } catch { return []; }
+}
+function photoSection(x) {
+  return `<div class="sec photos" id="photo-box" data-id="${esc(x.id)}"><h3>${icon("camera")}${esc(t("photo.title"))}</h3>
+    <div class="ph-grid" id="ph-grid"><p class="ph-empty">${esc(t("photo.loading"))}</p></div>
+    <button type="button" class="ph-add press" data-ph="add">${icon("camera")}${esc(t("photo.add"))}</button></div>`;
+}
+async function loadPhotos(x, force = false) {
+  const list = await fetchPhotos(x.id, force);
+  const grid = document.getElementById("ph-grid");
+  if (!grid || document.getElementById("photo-box")?.dataset.id !== x.id) return;
+  grid.innerHTML = list.length
+    ? list.map((ph) => `<button type="button" class="ph-item press" data-ph="view" data-pid="${esc(ph.id)}" data-src="${esc(photoUrl(ph.path))}" data-kind="${esc(ph.kind)}"><img src="${esc(photoUrl(ph.path))}" alt="${esc(t(`photo.kind_${ph.kind}`))}" loading="lazy"><span>${esc(t(`photo.kind_${ph.kind}`))}</span></button>`).join("")
+    : `<p class="ph-empty">${esc(t("photo.none"))}</p>`;
+}
+
+// 사진 줄이기: 긴 쪽 1280px, JPEG — 다시 그리면서 위치정보(GPS) 등 사진 정보가 모두 지워짐
+async function shrinkPhoto(file) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch {
+    bmp = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = URL.createObjectURL(file); });
+  }
+  const w0 = bmp.width, h0 = bmp.height, k = Math.min(1, 1280 / Math.max(w0, h0));
+  const c = document.createElement("canvas"); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.82));
+}
+
+let phKind = "entrance", phFile = null;
+function openPhotoForm() {
+  const m = $("#phrase-modal");
+  phFile = null;
+  m.innerHTML = `<div class="pm-card ph-form" role="dialog" aria-modal="true">
+    <h3>${esc(t("photo.add"))}</h3>
+    <div class="ph-kinds">${PHOTO_KINDS.map((k) => `<button type="button" class="chip chip-sm" data-ph="kind" data-kind="${k}" aria-pressed="${k === phKind}">${esc(t(`photo.kind_${k}`))}</button>`).join("")}</div>
+    <div class="ph-rules">${icon("shieldCheck")}<p>${esc(t("photo.rules"))}</p></div>
+    <label class="ph-pick press">${icon("camera")}<span id="ph-pick-label">${esc(t("photo.pick"))}</span><input id="ph-file" type="file" accept="image/*" hidden></label>
+    <img id="ph-preview" class="ph-preview" alt="" hidden>
+    <label class="ph-agree"><input id="ph-agree" type="checkbox"> <span>${esc(t("photo.agree"))}</span></label>
+    <div class="pm-actions"><button type="button" class="press ph-send" data-ph="send" disabled>${esc(t("photo.send"))}</button><button type="button" class="press" data-ph="close">${esc(t("common.close"))}</button></div>
+  </div>`;
+  m.hidden = false;
+  const update = () => { const btn = m.querySelector(".ph-send"); if (btn) btn.disabled = !(phFile && $("#ph-agree").checked); };
+  $("#ph-file").addEventListener("change", (e) => {
+    phFile = e.target.files?.[0] || null;
+    const pv = $("#ph-preview");
+    if (phFile) { pv.src = URL.createObjectURL(phFile); pv.hidden = false; $("#ph-pick-label").textContent = t("photo.repick"); }
+    update();
+  });
+  $("#ph-agree").addEventListener("change", update);
+}
+async function sendPhoto() {
+  const id = state.selectedId;
+  if (!phFile || !id) return;
+  const btn = document.querySelector(".ph-send");
+  btn.disabled = true; btn.textContent = t("photo.sending");
+  try {
+    const blob = await shrinkPhoto(phFile);
+    const rand = (crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const path = `${PHOTO.app}/${id.replace(/[^\w.-]/g, "_")}/${phKind}-${rand}.jpg`;
+    const up = await fetch(`${PHOTO.url}/storage/v1/object/${PHOTO.bucket}/${path}`, { method: "POST", headers: supaHeaders({ "Content-Type": "image/jpeg", "x-upsert": "false" }), body: blob });
+    if (!up.ok) throw new Error(`upload ${up.status}`);
+    const ins = await fetch(`${PHOTO.url}/rest/v1/photos`, { method: "POST", headers: supaHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }), body: JSON.stringify({ app: PHOTO.app, toilet_id: id, kind: phKind, path }) });
+    if (!ins.ok) throw new Error(`save ${ins.status}`);
+    $("#phrase-modal").hidden = true;
+    toast(t("photo.thanks"));
+  } catch (e) {
+    btn.disabled = false; btn.textContent = t("photo.send");
+    toast(t("photo.fail"), true);
+  }
+}
+function viewPhoto(b) {
+  const m = $("#phrase-modal");
+  m.innerHTML = `<div class="pm-card ph-view"><img src="${esc(b.dataset.src)}" alt="${esc(t(`photo.kind_${b.dataset.kind}`))}"><p class="ph-cap">${esc(t(`photo.kind_${b.dataset.kind}`))}</p>
+    <div class="pm-actions"><button type="button" class="press" data-ph="report" data-pid="${esc(b.dataset.pid)}">${icon("shield")}${esc(t("photo.report"))}</button><button type="button" class="press" data-ph="close">${esc(t("common.close"))}</button></div></div>`;
+  m.hidden = false;
+}
+async function reportPhoto(pid) {
+  try {
+    await fetch(`${PHOTO.url}/rest/v1/rpc/report_photo`, { method: "POST", headers: supaHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ photo_id: pid }) });
+    toast(t("photo.reported"));
+  } catch { toast(t("photo.fail"), true); }
+  $("#phrase-modal").hidden = true;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ph]");
+  if (!b) return;
+  const a = b.dataset.ph;
+  if (a === "add") openPhotoForm();
+  else if (a === "kind") { phKind = b.dataset.kind; document.querySelectorAll('[data-ph="kind"]').forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.kind === phKind))); }
+  else if (a === "send") sendPhoto();
+  else if (a === "view") viewPhoto(b);
+  else if (a === "report") reportPhoto(b.dataset.pid);
+  else if (a === "close") $("#phrase-modal").hidden = true;
+});
 
 // ---------- 안내 ----------
 function renderGuide() {

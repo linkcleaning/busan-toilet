@@ -548,3 +548,26 @@ html, body { touch-action: manipulation; }
 .contact-btn { display: flex; align-items: center; gap: 10px; min-height: 48px; border-radius: 14px; border: 1.5px solid var(--line); background: #fff; padding: 0 14px; font-size: 14px; font-weight: 800; color: var(--basalt); word-break: break-all; }
 .contact-btn .ic { width: 18px; height: 18px; flex-shrink: 0; }
 .contact-btn.kakao { background: #FEE500; border-color: #F2D900; color: #191919; }
+
+/* 화장실 사진 */
+.photos { margin-top: 16px; }
+.ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ph-item { position: relative; display: block; aspect-ratio: 1; max-width: 100%; overflow: hidden; border-radius: 14px; border: 1.5px solid var(--line); background: #F4F6F6; padding: 0; }
+.ph-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-item span { position: absolute; left: 6px; bottom: 6px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; }
+.ph-empty { grid-column: 1 / -1; margin: 0; font-size: 12.5px; font-weight: 600; line-height: 1.5; color: var(--muted); }
+.ph-add { margin-top: 10px; display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; border: 1.5px dashed var(--line); background: #fff; font-size: 14px; font-weight: 900; color: var(--basalt); }
+.ph-add .ic, .ph-pick .ic { width: 18px; height: 18px; }
+.ph-form { text-align: left; }
+.ph-form h3 { margin: 0 0 12px; font-size: 18px; font-weight: 900; }
+.ph-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.ph-rules { display: flex; gap: 8px; margin-top: 12px; border-radius: 12px; background: #FFF6E6; padding: 10px 12px; }
+.ph-rules .ic { width: 18px; height: 18px; flex-shrink: 0; color: #B26A00; }
+.ph-rules p { margin: 0; font-size: 12px; font-weight: 700; line-height: 1.55; color: #6B4A12; }
+.ph-pick { margin-top: 12px; display: flex; min-height: 52px; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; background: var(--basalt); color: #fff; font-size: 14px; font-weight: 900; cursor: pointer; }
+.ph-preview { margin-top: 10px; width: 100%; max-height: 240px; object-fit: contain; border-radius: 12px; background: #000; }
+.ph-agree { margin-top: 12px; display: flex; gap: 8px; align-items: flex-start; font-size: 13px; font-weight: 700; line-height: 1.45; color: var(--basalt); }
+.ph-agree input { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; }
+.ph-send:disabled { opacity: .45; }
+.ph-view img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; background: #000; display: block; }
+.ph-cap { margin: 10px 0 0; font-weight: 900; }
