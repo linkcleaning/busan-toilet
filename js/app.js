@@ -246,7 +246,7 @@ let toastTimer;
 function toast(msg, err = false) {
   const el = $("#toast");
   el.textContent = msg; el.className = `toast${err ? " err" : ""}`; el.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 2600);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), err ? 7000 : 2600);
 }
 
 // ---------- 위치 ----------
