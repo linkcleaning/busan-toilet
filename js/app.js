@@ -592,7 +592,7 @@ function contactCard(subject = "") {
 const PHOTO = { url: "https://hitnkcmcrztkeqohnuso.supabase.co", key: "sb_publishable_yV6XGpNN-PIyO9WrSxfLJw_nxC5H8Mh", app: "busan", bucket: "toilet-photos" };
 const PHOTO_KINDS = ["building", "entrance", "route"];
 const photoCache = new Map();
-const supaHeaders = (extra = {}) => ({ apikey: PHOTO.key, Authorization: `Bearer ${PHOTO.key}`, ...extra });
+const supaHeaders = (extra = {}) => ({ apikey: PHOTO.key, ...(PHOTO.key.startsWith("sb_") ? {} : { Authorization: `Bearer ${PHOTO.key}` }), ...extra });
 const photoUrl = (path) => `${PHOTO.url}/storage/v1/object/public/${PHOTO.bucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
 
 async function fetchPhotos(id, force = false) {
@@ -667,14 +667,14 @@ async function sendPhoto() {
     const rand = (crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const path = `${PHOTO.app}/${id.replace(/[^\w.-]/g, "_")}/${phKind}-${rand}.jpg`;
     const up = await fetch(`${PHOTO.url}/storage/v1/object/${PHOTO.bucket}/${path}`, { method: "POST", headers: supaHeaders({ "Content-Type": "image/jpeg", "x-upsert": "false" }), body: blob });
-    if (!up.ok) throw new Error(`upload ${up.status}`);
+    if (!up.ok) throw new Error(`사진 ${up.status} ${(await up.text()).slice(0, 80)}`);
     const ins = await fetch(`${PHOTO.url}/rest/v1/photos`, { method: "POST", headers: supaHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }), body: JSON.stringify({ app: PHOTO.app, toilet_id: id, kind: phKind, path }) });
-    if (!ins.ok) throw new Error(`save ${ins.status}`);
+    if (!ins.ok) throw new Error(`저장 ${ins.status} ${(await ins.text()).slice(0, 80)}`);
     $("#phrase-modal").hidden = true;
     toast(t("photo.thanks"));
   } catch (e) {
     btn.disabled = false; btn.textContent = t("photo.send");
-    toast(t("photo.fail"), true);
+    toast(`${t("photo.fail")} (${String(e.message || e).replace(/\s+/g, " ")})`, true);
   }
 }
 function viewPhoto(b) {
