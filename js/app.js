@@ -721,7 +721,8 @@ function renderGuide() {
         ${k === "data" && m ? `<p class="meta">${m.count.toLocaleString()} · ${esc(t("detail.updated"))} ${esc(m.referenceDate || "-")}<br><a href="${esc(m.sourcePages?.[0] || "https://www.data.go.kr")}" target="_blank" rel="noreferrer">data.go.kr</a></p>` : ""}
       </article>`).join("")}
       ${contactCard()}
-    </div></div>`;
+    </div>
+    <p class="admin-link"><a href="admin.html">${icon("shield")}${esc(t("guide.admin"))}</a></p></div>`;
 }
 
 // ---------- SOS ----------
